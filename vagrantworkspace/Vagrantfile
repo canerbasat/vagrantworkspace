@@ -1,0 +1,59 @@
+##
+# add this to your provision.sh
+#
+# [!] run as 'vagrant' like this:
+# su vagrant -c "source ${PROVISION_DIR}/provision-node.sh"
+#
+# [!] please keep the echo messages. those actions could take some more time without any output, so let the user know.
+##
+
+# install latest nvm
+$allAssetsInstall = <<SCRIPT 
+git clone https://github.com/creationix/nvm.git ~/.nvm && cd ~/.nvm && git checkout `git describe --abbrev=0 --tags`
+source ~/.nvm/nvm.sh
+echo "source ~/.nvm/nvm.sh" >> ~/.bashrc
+echo "Installing node.js... (please be patient)"
+nvm install stable &> /dev/null
+nvm alias default stable
+SCRIPT
+
+
+# install global node packages
+$allAssetsInstall_3 = <<SCRIPT
+echo "Installing global node.js packages... (please be patient)"
+# change 'gulp' to 'grunt' depending on project setup
+npm install -g gulp bower npm-check-updates
+cd /vagrant/
+echo "Installing local node.js packages... (please be patient)"
+npm install
+bower install
+# see package.json for respective build task
+npm run build-dev
+SCRIPT
+
+
+Vagrant.configure(2) do |config|
+    config.vm.provider "virtualbox" do |v|
+    v.memory = 2048
+    end
+    config.vm.box_check_update = false
+    config.vm.box = "bento/ubuntu-16.04"
+   
+    # Port Forwarding
+    config.vm.network "forwarded_port", guest: 3000, host: 3000
+    config.vm.network "forwarded_port", guest: 3001, host: 3001
+    
+    # The Install Script
+    #config.vm.provision "shell", inline: $LXDE
+    #config.vm.provision :reload
+    #config.vm.provision "shell", inline: $KlasorYarat
+    #config.vm.provision "shell", inline: $allAssetsInstall, privileged: false
+    #config.vm.provision "shell", inline: $allAssetsInstall_3, privileged: false
+    #config.vm.provision "shell", inline: $InstallNVM,privileged: false
+    #config.vm.provision :reload
+    config.vm.provision :shell, :path => "script.sh", privileged: false
+    #config.vm.provision "shell", inline: $InstallSelenium
+    #config.vm.provision "shell", inline: $Drivers
+    config.vm.synced_folder "./codes", "/vagrant", disabled: false, create: true
+    
+   end
